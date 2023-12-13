@@ -278,4 +278,6 @@
     <string name="use_krisp_noise_cancellation">Use noise cancellation</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="preview_screen_icon_disabled_toast_text">No audio or video is allowed; please use the hand-raise feature to ask questions.</string>
+    <string name="welcome_text">Welcome to</string>
 </resources>

@@ -69,7 +69,7 @@ class ScreenShareFragement : BottomSheetDialogFragment() {
 
 
 
-        binding.closeBtn.drawable.setTint(
+     /*   binding.closeBtn.drawable.setTint(
             getColorOrDefault(
                 HMSPrebuiltTheme.getColours()?.onSurfaceHigh,
                 HMSPrebuiltTheme.getDefaults().onsurface_high_emp
@@ -81,7 +81,7 @@ class ScreenShareFragement : BottomSheetDialogFragment() {
                 HMSPrebuiltTheme.getColours()?.onSurfaceHigh,
                 HMSPrebuiltTheme.getDefaults().onsurface_high_emp
             )
-        )
+        )*/
 
         binding.rotateBtn.setOnClickListener {
             contextSafe { context, activity ->

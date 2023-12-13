@@ -9,6 +9,7 @@ import android.view.ViewGroup
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
@@ -40,7 +41,6 @@ import live.hms.roomkit.ui.settings.SettingsStore
 import live.hms.roomkit.ui.theme.applyTheme
 import live.hms.roomkit.ui.theme.buttonDisabled
 import live.hms.roomkit.ui.theme.buttonEnabled
-import live.hms.roomkit.ui.theme.getCurrentRoleData
 import live.hms.roomkit.ui.theme.getPreviewLayout
 import live.hms.roomkit.ui.theme.setIconDisabled
 import live.hms.roomkit.ui.theme.setIconEnabled
@@ -272,7 +272,19 @@ class PreviewFragment : Fragment() {
         // don't allow editing the name if there's supposed to be a fixed one
 
         var introAnimationOffset = 450
-        if (meetingViewModel.getHmsRoomLayout()
+        if (!meetingViewModel.liveClassName.isNullOrEmpty()){
+            binding.nameTv.text = buildString {
+                append(getString(R.string.welcome_text))
+                append(" ")
+                append(meetingViewModel.liveClassName)
+            }
+            binding.nameTv.startBounceAnimationUpwards()
+        }else{
+            binding.nameTv.text = meetingViewModel.getHmsRoomLayout()
+                ?.getPreviewLayout(roleName)?.default?.elements?.previewHeader?.title
+            binding.nameTv.startBounceAnimationUpwards()
+        }
+/*        if (meetingViewModel.getHmsRoomLayout()
                 ?.getPreviewLayout(roleName)?.default?.elements?.previewHeader?.title.isNullOrEmpty()
         ) {
             binding.nameTv.visibility = View.GONE
@@ -280,7 +292,7 @@ class PreviewFragment : Fragment() {
             binding.nameTv.text = meetingViewModel.getHmsRoomLayout()
                 ?.getPreviewLayout(roleName)?.default?.elements?.previewHeader?.title
             binding.nameTv.startBounceAnimationUpwards()
-        }
+        }*/
 
         if (meetingViewModel.getHmsRoomLayout()
                 ?.getPreviewLayout(roleName)?.default?.elements?.previewHeader?.subTitle.isNullOrEmpty()
@@ -292,17 +304,29 @@ class PreviewFragment : Fragment() {
             binding.descriptionTv.startBounceAnimationUpwards()
         }
 
-        if (meetingViewModel.getHmsRoomLayout()?.getCurrentRoleData(roleName)?.logo?.url.isNullOrEmpty()) {
-            binding.logoIv.visibility = View.INVISIBLE
-        } else {
+        if(!meetingViewModel.roomLogoUrl.isNullOrEmpty()){
             binding.logoIv.visibility = View.VISIBLE
             Glide.with(this)
-                .load(meetingViewModel.getHmsRoomLayout()?.getCurrentRoleData(roleName)?.logo?.url)
+                .load(meetingViewModel.roomLogoUrl)
                 .into(binding.logoIv);
             introAnimationOffset += 50
             binding.logoIv.startBounceAnimationUpwards()
-
+        }else{
+            binding.logoIv.visibility = View.INVISIBLE
         }
+
+        /***
+        if (meetingViewModel.getHmsRoomLayout()?.getCurrentRoleData(roleName)?.logo?.url.isNullOrEmpty()) {
+        binding.logoIv.visibility = View.INVISIBLE
+        } else {
+        binding.logoIv.visibility = View.VISIBLE
+        Glide.with(this)
+        .load(meetingViewModel.getHmsRoomLayout()?.getCurrentRoleData(roleName)?.logo?.url)
+        .into(binding.logoIv);
+        introAnimationOffset += 50
+        binding.logoIv.startBounceAnimationUpwards()
+
+        }***/
     }
 
     private fun setupKeyboardAnimation() {
@@ -432,8 +456,13 @@ class PreviewFragment : Fragment() {
                         binding.buttonSwitchCamera.isEnabled = false
                         binding.buttonToggleVideo.setIconDisabled(R.drawable.avd_video_on_to_off)
                     }
+                } ?: run {
+                    Toast.makeText(
+                        context,
+                        resources.getString(R.string.preview_screen_icon_disabled_toast_text),
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
-
             }
         }
 
@@ -449,6 +478,12 @@ class PreviewFragment : Fragment() {
                     } else {
                         binding.buttonToggleAudio.setIconEnabled(R.drawable.avd_mic_off_to_on)
                     }
+                } ?: run {
+                    Toast.makeText(
+                        context,
+                        resources.getString(R.string.preview_screen_icon_disabled_toast_text),
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
         }
@@ -599,7 +634,7 @@ class PreviewFragment : Fragment() {
 
             val isLiveWithHLSOrRTMP = it.second.hlsStreamingState.state == HMSStreamingState.STARTED ||
                     it.second.rtmpHMSRtmpStreamingState.state == HMSStreamingState.STARTED
-            if (isLiveWithHLSOrRTMP) {
+            if ((isLiveWithHLSOrRTMP) && (meetingViewModel.isLiveIconEnabled == true || meetingViewModel.isLiveIconEnabled == null)) {
                 binding.liveHlsGroup.visibility = View.VISIBLE
                 binding.hlsSession.startBounceAnimationUpwards()
             } else {
@@ -734,6 +769,7 @@ class PreviewFragment : Fragment() {
     private fun updateUiBasedOnPublishParams(publishParams: PublishParams?) {
         if (publishParams == null) return
 
+        /**
         if (publishParams.allowed.contains("audio")) {
             binding.buttonToggleAudio.visibility = View.VISIBLE
             updateNoiseCancellationIcon()
@@ -758,6 +794,32 @@ class PreviewFragment : Fragment() {
             binding.videoCardContainer.visibility = View.GONE
             binding.iconNoiseCancellation.visibility = View.GONE
         }
+         **/
+
+        with(binding) {
+            val audioAllowed = "audio" in publishParams.allowed
+            val videoAllowed = "video" in publishParams.allowed
+
+            iconOutputDevice.startBounceAnimationUpwards()
+            setViewVisibleAndBounceAnimation(
+                view = buttonToggleAudio,
+                isViewEnabled = audioAllowed
+            )
+            setViewVisibleAndBounceAnimation(
+                view = buttonToggleVideo,
+                isViewEnabled = videoAllowed
+            )
+            setViewVisibleAndBounceAnimation(
+                view = buttonSwitchCamera,
+                isViewEnabled = videoAllowed
+            )
+            videoCardContainer.visibility = if (videoAllowed) View.VISIBLE else View.GONE
+            if (!videoAllowed) topMarging.setGuidelinePercent(0.35f)
+        }
+    }
+    private fun setViewVisibleAndBounceAnimation(view: View, isViewEnabled: Boolean) {
+        view.visibility = View.VISIBLE
+        view.startBounceAnimationUpwards(forceAlpha = if (isViewEnabled) 1.0f else 0.5f)
     }
 
     private fun updateNetworkQualityView(
